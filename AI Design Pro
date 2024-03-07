@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar  6 20:18:35 2024
+
+@author: Pravesh
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from custom_decision_tree import Custom_DecisionTreeClassifier
+
+from sklearn.metrics import accuracy_score,precision_score,recall_score,mean_squared_error,mean_absolute_error,r2_score
+
+# Function to add AWGN noise
+def add_awgn_noise(y, noise_level):
+    noise = np.random.normal(0, noise_level, y.shape)
+    y_noisy = y + noise
+    return y_noisy
+
+# Function to calculate accuracy
+def calculate_accuracy(X, Y, algorithm, noise_level, num_runs=10):
+    acc_values = []
+
+    for _ in range(num_runs):
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42, shuffle=False)
+
+        # Add AWGN noise to Y_test
+        Y_test_noisy = add_awgn_noise(Y_test, noise_level)
+
+        # Fit the algorithm
+        algorithm.fit(X_train, np.round(Y_train))  # Convert continuous labels to discrete
+
+        # Predict and calculate accuracy
+        Y_pred = algorithm.predict(X_test)
+        acc = accuracy_score(np.round(Y_test_noisy), Y_pred)
+        acc_values.append(acc)
+
+    # Return the average accuracy
+    return np.mean(acc_values)
+
+# Function to plot accuracy for different noise levels
+def plot_accuracy(algorithm, X, Y, noise_levels):
+    acc_values = []
+
+    for noise_level in noise_levels:
+        acc = calculate_accuracy(X, Y, algorithm, noise_level)
+        acc_values.append(acc)
+
+    return acc_values
+
+# Generate synthetic data
+np.random.seed(42)
+X = np.random.rand(100, 1)
+Y = np.sin(2 * np.pi * X).ravel()
+
+# Define noise levels from 0 to 20
+noise_levels = np.arange(0, 5.1, 0.1)
+
+# Define algorithms for classification
+svm_classifier = SVC()
+knn_classifier = KNeighborsClassifier()
+rf_classifier = RandomForestClassifier()
+lr_classifier = LogisticRegression()
+nb_classifier = GaussianNB()
+dt_classifier = DecisionTreeClassifier()
+custom_dt_classifier = Custom_DecisionTreeClassifier()
+
+# Plot accuracy for SVM
+svm_acc_values = plot_accuracy(svm_classifier, X, Y, noise_levels)
+plt.plot(noise_levels, svm_acc_values, label='SVM')
+
+# Plot accuracy for KNN Classifier
+knn_acc_values = plot_accuracy(knn_classifier, X, Y, noise_levels)
+plt.plot(noise_levels, knn_acc_values, label='KNN Classifier')
+
+# Plot accuracy for Random Forest Classifier
+rf_acc_values = plot_accuracy(rf_classifier, X, Y, noise_levels)
+plt.plot(noise_levels, rf_acc_values, label='Random Forest Classifier')
+
+# Plot accuracy for Logistic Regression
+lr_acc_values = plot_accuracy(lr_classifier, X, Y, noise_levels)
+plt.plot(noise_levels, lr_acc_values, label='Logistic Regression')
+
+# Plot accuracy for Naive Bayes
+nb_acc_values = plot_accuracy(nb_classifier, X, Y, noise_levels)
+plt.plot(noise_levels, nb_acc_values, label='Naive Bayes')
+
+# Plot accuracy for Decision Tree
+dt_acc_values = plot_accuracy(dt_classifier, X, Y, noise_levels)
+plt.plot(noise_levels, dt_acc_values, label='Decision Tree')
+
+# Plot accuracy for Custom Decision Tree
+custom_dt_acc_values = plot_accuracy(dt_classifier, X, Y, noise_levels)
+plt.plot(noise_levels, custom_dt_acc_values, label='Custom Decision Tree')
+
+# Show legend and labels
+plt.legend()
+plt.xlabel('Noise Level')
+plt.ylabel('Average Accuracy')
+plt.title('Average Accuracy vs. Noise Level for Different Classification Algorithms')
+
+# Show the plots
+plt.show()
